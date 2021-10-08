@@ -14,6 +14,8 @@ static mut VECTORS:Vec<Vec<String>> = vec![];
 static mut LOCATION_STORAGE:Vec<Vec<String>> = vec![];
 static mut LOCATION:Vec<(String,usize)> = vec![];
 static  mut INPUT_STORAGE:Vec<(String,String)> = vec![];
+static  mut FUNCTION:Vec<(String,String)> = vec![];
+static  mut FUNCR:Vec<(String,Vec<(String,Vec<Vec<String>>)>)> = vec![];
 
 static  mut STORAGE:Vec<String> = vec![];
 static  mut CLASS:Vec<(String,String)> = vec![];
@@ -33,574 +35,9 @@ fn main() {
   // let mut query = String::from("");
    let args:Vec<String> = env::args().collect();
    let querys_ = fs::read_to_string(args[1].clone()).expect("Something Wrong With The File");
-   let l_data_querys:Vec<&str> = querys_.trim().trim_end().split(";").collect();
-   let mut  querys:Vec<String> = vec![];
-   for l in l_data_querys{
-       let mut new_query = String::from("");
-       let mut start = 0;
-       let mut end = 0;
-       let mut a = 0;
-      // let mut bait_value = String::from("");
-
-      let mut query = l.replace('\n'," ").trim().trim_end().to_string().replace("  "," ").trim().trim_end().to_string();
-      
-      while a<query.len() {
-        let cote = query.char_indices().nth(a).unwrap().1;
-        let mut check = false;
-        if cote=='\''{
-            if start == 0{
-                start = a.clone();
-            }
-            else if start!=0{
-                end = a.clone();
-            }
-        }
-        if start !=0 && end !=0{
-           let mut d = query[start..end+1].to_string();
-           d = d.replace("'"," ");
-           d = d.trim().trim_end().to_string();
-           d = d.replace(" ","!@#880");
-           new_query.push_str(&d);
-           start = 0;
-           end = 0;
-           check = true;
-           } 
-           if start ==0 && !check{
-            new_query.push_str(&cote.to_string());
-           }
-        a = a+1;
-    }
-    query = new_query;
-      
-      if query == "exit"{
-           return;
-       }
-       else{
-        let l_data:Vec<&str> = query.trim().trim_end().split(';').collect();
-        for i in l_data{
-            querys = vec![];
-            querys.push(i.trim().trim_end().to_string());
-        }
-        //now include all the instructions here
-        for i in querys.iter(){
-            let splited_query:Vec<&str> = i.split('>').collect();
-            // we have to use some storage conditions in order to perform the executions
-           let all_query:Vec<&str> = splited_query[0].split(' ').collect();
-     
-             if all_query[0] == "GET"{
-             
-                //GET FROM users IN icommunity where {}
-                 //this dml is hybrid one.
-                 //conditions to add => single relational operator
-                 if all_query[1] == "FROM" && all_query[3] == "IN"{
-                     let class = all_query[2].to_string();
-                     let storage = all_query[4].to_string();
-                     unsafe{
-                         match CLASS.binary_search(&(storage,class)){
-                             Ok(index)=>{
-                                let part =   dml(i.to_string(),index);
-                                  VECTORS.push(part);
-                                  if splited_query.len()>1{
-                                      for i in 1..splited_query.len(){
-                                          let last_split:Vec<&str> = splited_query[i].trim().trim_end().split(' ').collect();
-                                          if last_split[0] == "STORE"{
-                                            store(last_split[1]);
-                                            
-                                             // println!("location {:?} value {:?}",LOCATION,LOCATION_STORAGE);
-                                            
-                                          }
-                                          else if last_split[0] == "STORE_UPDATE"{
-                                            store_update(last_split[1]);
-
-                                          } 
-                                         // else{
-                                           //   println!("WE DON'T KNOW");
-                                          //}
-                                      }
-                                    }
-                                    let return_indicator:Vec<&str> = i.split(">>").collect();
-                                    if return_indicator.len() == 2{
-                                     let d_return_indicator = return_(i.to_string());
-                                     println!("Message {:?} Vector {:?}",d_return_indicator.0,d_return_indicator.1);
-                                     return;
-                                    }                                
-                             },
-                             Err(_)=>println!("CLASS OR STORAGE NOT FOUND"),
-                         }
-                     }
-
-                 }
-             }
-             else if all_query[0] == "INSERT"{
-             //INSERT INTO ABC IN DEF -> [{key:value}|{key1:value1}|{key3:value3}|{key4:value4}]
-             let splitter:Vec<&str> = i.split("->").collect();
-             let spacer:Vec<&str> = splitter[0].split(" ").collect();
-             
-             if spacer[1] == "INTO" && spacer[3] == "IN" && splitter.len()==2{
-                //check for class & storage existence  
-                let class_name = spacer[2].to_string();
-                let storage_name = spacer[4].to_string();
-                unsafe{
-                    //check for the name existence
-                    match CLASS.binary_search(&(storage_name.to_string(),class_name.to_string())){
-                        Ok(index)=>{
-                            let mut slice = splited_query[1].trim().trim().to_string(); 
-                            slice = slice.replace("[","");
-                            slice = slice.replace("]","");
-                            slice = slice.trim().to_string();
-                            let data:Vec<&str> = slice.split('|').collect();
-                            let mut g_object = OBJECTS[index].clone();
-                            if g_object.0 == class_name{
-                                let returned_tuple = insert::insert_new(data,g_object.1.0.clone(),g_object.1.1.clone(),INPUT_STORAGE.clone());
-                                //println!("{:?} ov {:?}",returned_tuple,g_object.clone());
-                                //println!("{:?}",returned_tuple);
-                                if returned_tuple.0{
-                                    g_object.1.1 = returned_tuple.1;
-                                    OBJECTS[index] = g_object;
-                                    VECTORS.push(vec!["true".to_string()]);
-                                }
-                                else{
-                                    VECTORS.push(vec!["false".to_string()]);
-                                    //A new Scenerio HAs Been Created
-                                    println!("CHECK THE COLUMN NAMES");
-                                }
-                                //println!("{:?}",OBJECTS);
-                            }
-
-                    //        println!("DATABASE WITH NAME {} ALREADY EXISTS",store_name);
-                        }
-                        Err(_)=>{
-                            println!("STORAGE OR CLASS DOES NOT EXISTS");
-                        }
-                    }
-                                    let return_indicator:Vec<&str> = i.split(">>").collect();
-                                    if return_indicator.len() == 2{
-                                     let d_return_indicator = return_(i.to_string());
-                                     println!("Message {:?} Vector {:?}",d_return_indicator.0,d_return_indicator.1);
-                                     return;
-                                    }       
-                  }  
-                
-                
-           
-             }
-             else{
-                 //you might have the syntax error
-             }
-             }
-             else if all_query[0] == "INPUT"{
-                 let splitter:Vec<&str> = i.split("->").collect();
-                 if splitter.len()==2{
-                     let mut string = splitter[1].to_string();
-                     string = string.trim().trim_end().to_string();
-                     //println!("{:?} AND {:?}",string.chars().nth(0),string.chars().nth(string.len()-1));
-                      if string.chars().nth(0) == Some('[') && string.chars().nth(string.len()-1) == Some(']'){
-                          string = string.replace("[","");
-                          string = string.replace("]","");
-                          let string_vec:Vec<&str> = string.split(',').collect();
-                          if string_vec.len()>0 && string_vec[0] != ""{
-                              let d_vec = string_vec.clone();
-                              for i in string_vec{
-                                  //check for duplicates.
-                                  let cc = af::count_freq(d_vec.clone(),i);
-                                  if cc == 1{
-                                      //ask for input
-                                      println!("{} :",i);
-                                      let mut value = String::from("");
-                                      //value = io::stdin().read_line(&mut value).expect("error while Data Input").to_string();
-                                      match io::stdin().read_line(&mut value){
-                                          Ok(_)=>{
-
-                                          }
-                                          Err(_)=>{
-                                              panic!("INPUT SYSTEM ERROR");
-                                          }
-                                      }
-                                      unsafe{
-                                        INPUT_STORAGE.push((i.to_string(),value.replace("\n","")));
-                                      }
-                                  }
-                              }
-
-                          }
-                          else{
-                              panic!("Check The INPUTS");
-                          }
-
-                      }
-                      else{
-                          panic!("Check For Statement '[' AND ']' tokens");
-                      }
-                 } 
-                 else{
-                     panic!("PLEASE CHECK THE SYNTAX FOR 'INPUT' STATEMENTS");
-                 }
-             }
-             else if all_query[0] == "CMP"{
-                 /*
-                 1.AXC(key)
-                 2.ITR<c<key
-                 3.INPUT(Index)
-                 4.NORMAL
-                 Step1:COLLECT KEYS,VALUES,RO,CO in different vectors inside a single part.
-                 */
-                unsafe{
-                    let data =  cmp_fn(i.to_string());
-                  //  println!("{:?}",data);
-                    let functions:Vec<&str> = i.split(">>").collect();
-                            /*
-                            1.STORE->(AXC,ITR)
-                            2.EXIT->(SIMPLY EXIT THE PROGRAME)
-                            3.RUN->(RUN ANY INSTRUCTION SET BASED ON NAME AND OWNERSHIP ONLY BY GIVING THE NAME)
-                            */
-                    
-                    if data.len() > 0{
-                        //execute the true_command;
-                        if functions.len()>1{
-                            let true_command = functions[1].trim().trim_end();
-                            //we will run a loop to calculate the total number of functions requires.
-                            let splitted_commands:Vec<&str> = true_command.split("||").collect();
-                            for i in splitted_commands{
-                                if i[0..5].to_string() == "STORE"{
-
-                                    let command = i[5..].trim().trim_end();
-                                      store(command);
-                                }
-                                else if i[0..3].to_string() == "RUN"{
-                                    //We will see
-                                }
-                                else if i[0..11].to_string() == "STORE_UPDATE"{
-                                    let command = i[11..].trim().trim_end();
-                                    store_update(command);
-                                } //Mark Thos Point For Future Use
-                                else if i[0..7].to_string() == "RETURN("{
-                                     let d_return_indicator = cmp_return(i.to_string());
-                                     println!("Message {:?} Vector {:?}",d_return_indicator.0,d_return_indicator.1);
-                                     return;
-                            }
-                            //YOU CAN DIVIDE FUNCTIONS USING || AND CAN RUN MULTIPLE FUNCTIONS
-                        }
-                    } 
-                    else if data.len() == 0 {
-                        //execute the false command
-                        if functions.len()>2{
-                            let false_command = functions[2];
-                            let splitted_commands:Vec<&str> = false_command.split("||").collect();
-                            if splitted_commands.len()>0{
-                                for i in splitted_commands{
-                                    if i[0..5].to_string() == "STORE"{
-
-                                        let command = i[5..].trim().trim_end();
-                                          store(command);
-                                    }
-                                    else if i[0..3].to_string() == "RUN"{
-                                        //We will see
-                                    }
-                                    else if i[0..11].to_string() == "STORE_UPDATE"{
-                                        let command = i[11..].trim().trim_end();
-                                        store_update(command);
-                                    }
-                                    else if i[0..7].to_string() == "RETURN("{
-                                        let d_return_indicator = cmp_return(i.to_string());
-                                     println!("Message {:?} Vector {:?}",d_return_indicator.0,d_return_indicator.1);
-                                     return;
-                               }
-                                }
-                            }
-                        }
-                    }
-                    VECTORS.push(data);
-                }
-             }
-            }
-             else if all_query[0] == "UPDATE"{
-                 //UPDATE students IN schooldiary
-                 let split_update:Vec<&str> = i.split("SET").collect();
-                 //println!("{} {}",all_query[1],all_query[3]);
-                 if split_update.len()==2 &&  all_query[2]== "IN"{
-                     let class = all_query[1].to_string();
-                     let storage = all_query[3].to_string();
-                     unsafe{
-                         match CLASS.binary_search(&(storage,class)){
-                             Ok(index)=>{
-                                 //lets go ahead
-                                 let h =update_one(split_update[0].to_string(),index);
-                                 if h.len()>0{
-                        
-                                              for i in 0..h.len(){
-                                               update_second(split_update[1].to_string(),index,i);
-                                                }
-                                 }
-                                 else{
-                                      print!("UPDATE CONDITIONS NOT SATISFIED");
-                                     }
-                             }
-                             Err(_)=>{
-                                 println!("STORAGE OR CLASS NOT FOUND");
-                             }
-                         }
-                         //call here
-                         let return_indicator:Vec<&str> = i.split(">>").collect();
-                                    if return_indicator.len() == 2{
-                                     let d_return_indicator = return_(i.to_string());
-                                     println!("Message {:?} Vector {:?}",d_return_indicator.0,d_return_indicator.1);
-                                     return;
-                                    } 
-                         
-                     }
-
-                    
-                 }
-                 else{
-                     println!("INSTRUCTION IS NOT AS PER THE ALIOTH STATEMENTS");
-                 }
-
-             }
-             else if all_query[0] == "DELETE"{
-                //let split_update:Vec<&str> = i.split("SET").collect();
-                 if  all_query[2]== "IN"{
-                     let class = all_query[1].to_string();
-                     let storage = all_query[3].to_string();
-                     unsafe{
-                         match CLASS.binary_search(&(storage,class)){
-                             Ok(index)=>{
-                                 //lets go ahead
-                                 let h =update_one(i.to_string(),index);
-                                 if h.len()>0{
-                        
-                                              for i in 0..h.len(){
-                                               delete(index,i);
-                                                }
-                                 }
-                                 else{
-                                      print!("DELETE CONDITIONS NOT SATISFIED");
-                                     }
-                             }
-                             Err(_)=>{
-                                 println!("STORAGE OR CLASS NOT FOUND");
-                             }
-                         }
-                         let return_indicator:Vec<&str> = i.split(">>").collect();
-                                    if return_indicator.len() == 2{
-                                     let d_return_indicator = return_(i.to_string());
-                                     println!("Message {:?} Vector {:?}",d_return_indicator.0,d_return_indicator.1);
-                                     return;
-                                    } 
-                     }
-                 }
-                 else{
-                     println!("INSTRUCTION IS NOT AS PER THE ALIOTH STATEMENTS");
-                 }
-             }
-             else if  all_query[0] == "CREATE" {
-                let data_for:Vec<&str> = i.split("->").collect();
-                let data_one:Vec<&str> = data_for[0].split(" ").collect();
-                if data_one[1] == "STORAGE"{
-                    if data_one.len()>1{
-                        let mut store_name = data_one[2];
-                        let mut trial_name = "".to_string();
-                        if store_name.len()>3{
-                            if store_name[0..4].to_string() == "AXC("{
-                                trial_name = store_name.replace("AXC(","");
-                                trial_name = trial_name.replace(")","");
-                                trial_name = access_value(trial_name);
-                                store_name = &trial_name;
-
-                            }
-                            else if store_name[0..4].to_string() == "ITR<"{
-                                let splitted:Vec<&str> = store_name.split("<").collect();
-                                if splitted.len()==3{
-                                    //LETS HAVE IT
-                                    unsafe{
-                                        let index_count:usize = splited_query[1].parse().unwrap();
-                                        if index_count<VECTORS.len(){
-                                            let get = to_get(VECTORS[index_count].clone(),splitted[2]);
-                                            trial_name = get[get.len()-1].clone();
-                                            store_name = &trial_name;
-                                        }
-                                        else{
-                                            println!("DATA NOT FOUND OR STATEMENT IS NOT CORRECT");
-                                        }
-                                    }
-                                    
-                                }
-                            }
-                        }
-                        else if store_name.len()>7{
-                            //this will go for the concate
-                            if store_name[0..7].to_string() == "CONCATE"{
-                                trial_name = concate(store_name.to_string());
-                                store_name = &trial_name;
-                            }
-                        }
-                        unsafe{
-                            //check for the name existence
-                            match STORAGE.binary_search(&store_name.to_string()){
-                                Ok(_)=>{
-                                    println!("DATABASE WITH NAME {} ALREADY EXISTS",store_name);
-                                }
-                                Err(_)=>{
-                                    STORAGE.push(store_name.to_string());
-                                    println!("STORAGE CREATED ON CHAIN JADN");
-                                }
-                            }
-                          }  
-                    }
-                }
-                else if data_one[1] == "CLASS" {
-                    //CREATE CLASS players IN digi
-                    if data_one.len() > 5{
-                        let mut class_name = data_one[2];
-                        if data_one[3] == "IN" && data_for.len() == 2{
-                            let mut storage_name = data_one[4];
-
-                            //Parse The Query And RESET THE VALUES INSIDE THE DATA.
-
-                            let mut trial_name = "".to_string();
-                            if storage_name.len()>3{
-                                if storage_name[0..4].to_string() == "AXC("{
-                                    trial_name = storage_name.replace("AXC(","");
-                                    trial_name = trial_name.replace(")","");
-                                    trial_name = access_value(trial_name);
-                                    storage_name = &trial_name;
-    
-                                }
-                                else if storage_name[0..4].to_string() == "ITR<"{
-                                    let splitted:Vec<&str> = storage_name.split("<").collect();
-                                    if splitted.len()==3{
-                                        //LETS HAVE IT
-                                        unsafe{
-                                            let index_count:usize = splited_query[1].parse().unwrap();
-                                            if index_count<VECTORS.len(){
-                                                let get = to_get(VECTORS[index_count].clone(),splitted[2]);
-                                                trial_name = get[get.len()-1].clone();
-                                                storage_name = &trial_name;
-                                            }
-                                            else{
-                                                println!("DATA NOT FOUND OR STATEMENT IS NOT CORRECT");
-                                            }
-                                        }
-                                        
-                                    }
-                                }
-                            }
-                            else if storage_name.len()>7{
-                                //this will go for the concate
-                                if storage_name[0..7].to_string() == "CONCATE"{
-                                    trial_name = concate(storage_name.to_string());
-                                    storage_name = &trial_name;
-                                }
-                            }
-                            //PARSING FOR CLASS NAME
-                            let mut trial_name = "".to_string();
-                            if class_name.len()>3{
-                                if class_name[0..4].to_string() == "AXC("{
-                                    trial_name = class_name.replace("AXC(","");
-                                    trial_name = trial_name.replace(")","");
-                                    trial_name = access_value(trial_name);
-                                    class_name = &trial_name;
-                                }
-                                else if class_name[0..4].to_string() == "ITR<"{
-                                    let splitted:Vec<&str> = class_name.split("<").collect();
-                                    if splitted.len()==3{
-                                        //LETS HAVE IT
-                                        unsafe{
-                                            let index_count:usize = splited_query[1].parse().unwrap();
-                                            if index_count<VECTORS.len(){
-                                                let get = to_get(VECTORS[index_count].clone(),splitted[2]);
-                                                trial_name = get[get.len()-1].clone();
-                                                class_name = &trial_name;
-                                            }
-                                            else{
-                                                println!("DATA NOT FOUND OR STATEMENT IS NOT CORRECT");
-                                            }
-                                        }
-                                        
-                                    }
-                                }
-                            }
-                            else if class_name.len()>7{
-                                //this will go for the concate
-                                if class_name[0..7].to_string() == "CONCATE"{
-                                    trial_name = concate(class_name.to_string());
-                                    class_name = &trial_name;
-                                }
-                            }
-                            //search for STORAGE EXISTENCE
-                            unsafe{
-                                match STORAGE.binary_search(&storage_name.to_string()){
-                                    Ok(_) =>{
-                                        match CLASS.binary_search(&(storage_name.to_string(),class_name.to_string())){
-                                            Ok(_)=>{
-                                                //THROW ERROR.
-                                                println!("CLASS WITH NAME {} AlREADY EXIST IN STORAGE {}",class_name,storage_name);
-                                            }
-                                            Err(_)=>{
-                                                //PARSING FOR COLUMN VALUES
-                                                let mut data = data_for[1].replace("{"," ");
-                                                 data = data.replace("}"," ");
-                                                 data = data.trim().trim_end().to_string();
-                                                 let vec_data = insert::insert_column(data.split(",").collect());
-                                                    CLASS.push((storage_name.to_string(),class_name.to_string()));
-                                                    OBJECTS.push((class_name.to_string(),(vec_data,vec![])));
-                                                println!("CLASS CREATED IN STORAGE {}",storage_name);
-                                            }
-                                        }
-                                    },
-                                    Err(_)=>{
-                                        println!("STOARGE {} NOT EXISTS",storage_name);
-                                    }
-                                }
-                            }
-                        }
-                        else{
-                            println!("IN Statement Missing OR THE '->' Statement Missing");
-                        }
-                    }
-
-                }
-                /*
-                 1.Create STORE
-                 2.Create OB
-                 */
-                let return_indicator:Vec<&str> = i.split(">>").collect();
-                                    if return_indicator.len() == 2{
-                                     let d_return_indicator = return_(i.to_string());
-                                     println!("Message {:?} Vector {:?}",d_return_indicator.0,d_return_indicator.1);
-                                     return;
-                                    } 
-                 
-             }
-             else if all_query[0] == "STORE"{
-                // println!("{:?}",all_query[1]);
-                 store(all_query[1]);
-                 let return_indicator:Vec<&str> = i.split(">>").collect();
-                                    if return_indicator.len() == 2{ 
-                                     let d_return_indicator = return_(i.to_string());
-                                     println!("Message {:?} Vector {:?}",d_return_indicator.0,d_return_indicator.1);
-                                     return;
-                                    } 
-             }
-             else if all_query[0] == "STORE_UPDATE"{
-                 store_update(all_query[1]);
-                 let return_indicator:Vec<&str> = i.split(">>").collect();
-                                    if return_indicator.len() == 2{
-                                     let d_return_indicator = return_(i.to_string());
-                                     println!("Message {:?} Vector {:?}",d_return_indicator.0,d_return_indicator.1);
-                                     return;
-                                    } 
-             }   
-        }
-       //summary of datas
-       /* 
-       unsafe{
-         println!("{:?}",VECTORS);
-     
-       }
-       */
-       }
-   }
-   //let mut vectors_of_data:Vec<&str> =vec![] ;
+    function_executer(querys_);
+   // instruction_executer(querys_);
+  
 }
 
 fn dml(query:String,index:usize)->Vec<String>{
@@ -2698,4 +2135,680 @@ fn give_value(key:String)->String{
         }
         string_to_send
     }
+}
+
+fn function_executer(querys_:String){
+    let querys_ = querys_.replace("\n","").trim().trim_end().to_string();
+    let l_data_querys:Vec<&str> = querys_.trim().trim_end().split("<<-").collect();
+    //call the basic methods
+
+    for i in l_data_querys.clone(){
+        let all_query:Vec<&str> = i.split(" ").collect();
+        //now we have what we wanted
+        if all_query[0] == "FUN"{
+            let checker:Vec<&str> = i.split("->>").collect();
+            if checker.len() == 2{
+                let names = all_query[1].to_string();
+                 let mut instructions = checker[1].to_string();
+                 instructions = instructions.trim().trim_end().to_string();
+                // if instructions.chars().nth(0) == Some('{') && instructions.chars().nth(instructions.len()-1) == Some('}'){
+                  //   instructions.replace_range(..0,"");
+                    // instructions.replace_range(instructions.len()-1..,"");
+                     //now we have pure instructions
+                     //create funtions for check
+                     unsafe{
+                      let freq = af::count_freq_tuple(FUNCTION.clone(),names.clone());
+                      if freq ==0{
+                          //now insert the data
+                          FUNCTION.push((names,instructions));
+                      }
+                      else{
+                          panic!("Function With Name {} Already Exists",all_query[1]);
+                      }
+                     }
+               //  }
+                // else{
+                  //   panic!("Check For '{' and '}' tokens in Function Prototype");
+                 //}
+            }
+            else{
+                panic!("Check The Function Prototype");
+            }
+        }
+
+    }
+    instruction_executer(l_data_querys[l_data_querys.len()-1].to_string());
+}
+
+fn instruction_executer(querys_:String){
+
+    let l_data_querys:Vec<&str> = querys_.trim().trim_end().split(";").collect();
+    let mut  querys:Vec<String> = vec![];
+    for l in l_data_querys{
+        let mut new_query = String::from("");
+        let mut start = 0;
+        let mut end = 0;
+        let mut a = 0;
+       // let mut bait_value = String::from("");
+ 
+       let mut query = l.replace('\n'," ").trim().trim_end().to_string().replace("  "," ").trim().trim_end().to_string();
+       
+       while a<query.len() {
+         let cote = query.char_indices().nth(a).unwrap().1;
+         let mut check = false;
+         if cote=='\''{
+             if start == 0{
+                 start = a.clone();
+             }
+             else if start!=0{
+                 end = a.clone();
+             }
+         }
+         if start !=0 && end !=0{
+            let mut d = query[start..end+1].to_string();
+            d = d.replace("'"," ");
+            d = d.trim().trim_end().to_string();
+            d = d.replace(" ","!@#880");
+            new_query.push_str(&d);
+            start = 0;
+            end = 0;
+            check = true;
+            } 
+            if start ==0 && !check{
+             new_query.push_str(&cote.to_string());
+            }
+         a = a+1;
+     }
+     query = new_query;
+       
+       if query == "exit"{
+            return;
+        }
+        else{
+         let l_data:Vec<&str> = query.trim().trim_end().split(';').collect();
+         for i in l_data{
+             querys = vec![];
+             querys.push(i.trim().trim_end().to_string());
+         }
+         //now include all the instructions here
+         for i in querys.iter(){
+             let splited_query:Vec<&str> = i.split('>').collect();
+             // we have to use some storage conditions in order to perform the executions
+            let all_query:Vec<&str> = splited_query[0].split(' ').collect();
+      
+              if all_query[0] == "GET"{
+              
+                 //GET FROM users IN icommunity where {}
+                  //this dml is hybrid one.
+                  //conditions to add => single relational operator
+                  if all_query[1] == "FROM" && all_query[3] == "IN"{
+                      let class = all_query[2].to_string();
+                      let storage = all_query[4].to_string();
+                      unsafe{
+                          match CLASS.binary_search(&(storage,class)){
+                              Ok(index)=>{
+                                 let part =   dml(i.to_string(),index);
+                                   VECTORS.push(part);
+                                   if splited_query.len()>1{
+                                       for i in 1..splited_query.len(){
+                                           let last_split:Vec<&str> = splited_query[i].trim().trim_end().split(' ').collect();
+                                           if last_split[0] == "STORE"{
+                                             store(last_split[1]);
+                                             
+                                              // println!("location {:?} value {:?}",LOCATION,LOCATION_STORAGE);
+                                             
+                                           }
+                                           else if last_split[0] == "STORE_UPDATE"{
+                                             store_update(last_split[1]);
+ 
+                                           } 
+                                          // else{
+                                            //   println!("WE DON'T KNOW");
+                                           //}
+                                       }
+                                     }
+                                     let return_indicator:Vec<&str> = i.split(">>").collect();
+                                     if return_indicator.len() == 2{
+                                      let d_return_indicator = return_(i.to_string());
+                                      println!("Message {:?} Vector {:?}",d_return_indicator.0,d_return_indicator.1);
+                                      return;
+                                     }                                
+                              },
+                              Err(_)=>println!("CLASS OR STORAGE NOT FOUND"),
+                          }
+                      }
+ 
+                  }
+              }
+              else if all_query[0] == "INSERT"{
+              //INSERT INTO ABC IN DEF -> [{key:value}|{key1:value1}|{key3:value3}|{key4:value4}]
+              let splitter:Vec<&str> = i.split("->").collect();
+              let spacer:Vec<&str> = splitter[0].split(" ").collect();
+              
+              if spacer[1] == "INTO" && spacer[3] == "IN" && splitter.len()==2{
+                 //check for class & storage existence  
+                 let class_name = spacer[2].to_string();
+                 let storage_name = spacer[4].to_string();
+                 unsafe{
+                     //check for the name existence
+                     match CLASS.binary_search(&(storage_name.to_string(),class_name.to_string())){
+                         Ok(index)=>{
+                             let mut slice = splited_query[1].trim().trim().to_string(); 
+                             slice = slice.replace("[","");
+                             slice = slice.replace("]","");
+                             slice = slice.trim().to_string();
+                             let data:Vec<&str> = slice.split('|').collect();
+                             let mut g_object = OBJECTS[index].clone();
+                             if g_object.0 == class_name{
+                                 let returned_tuple = insert::insert_new(data,g_object.1.0.clone(),g_object.1.1.clone(),INPUT_STORAGE.clone());
+                                 //println!("{:?} ov {:?}",returned_tuple,g_object.clone());
+                                 //println!("{:?}",returned_tuple);
+                                 if returned_tuple.0{
+                                     g_object.1.1 = returned_tuple.1;
+                                     OBJECTS[index] = g_object;
+                                     VECTORS.push(vec!["true".to_string()]);
+                                 }
+                                 else{
+                                     VECTORS.push(vec!["false".to_string()]);
+                                     //A new Scenerio HAs Been Created
+                                     println!("CHECK THE COLUMN NAMES");
+                                 }
+                                 //println!("{:?}",OBJECTS);
+                             }
+ 
+                     //        println!("DATABASE WITH NAME {} ALREADY EXISTS",store_name);
+                         }
+                         Err(_)=>{
+                             println!("STORAGE OR CLASS DOES NOT EXISTS");
+                         }
+                     }
+                                     let return_indicator:Vec<&str> = i.split(">>").collect();
+                                     if return_indicator.len() == 2{
+                                      let d_return_indicator = return_(i.to_string());
+                                      println!("Message {:?} Vector {:?}",d_return_indicator.0,d_return_indicator.1);
+                                      return;
+                                     }       
+                   }  
+                 
+                 
+            
+              }
+              else{
+                  //you might have the syntax error
+              }
+              }
+              else if all_query[0] == "INPUT"{
+                  let splitter:Vec<&str> = i.split("->").collect();
+                  if splitter.len()==2{
+                      let mut string = splitter[1].to_string();
+                      string = string.trim().trim_end().to_string();
+                      //println!("{:?} AND {:?}",string.chars().nth(0),string.chars().nth(string.len()-1));
+                       if string.chars().nth(0) == Some('[') && string.chars().nth(string.len()-1) == Some(']'){
+                           string = string.replace("[","");
+                           string = string.replace("]","");
+                           let string_vec:Vec<&str> = string.split(',').collect();
+                           if string_vec.len()>0 && string_vec[0] != ""{
+                               let d_vec = string_vec.clone();
+                               for i in string_vec{
+                                   //check for duplicates.
+                                   let cc = af::count_freq(d_vec.clone(),i);
+                                   if cc == 1{
+                                       //ask for input
+                                       println!("{} :",i);
+                                       let mut value = String::from("");
+                                       //value = io::stdin().read_line(&mut value).expect("error while Data Input").to_string();
+                                       match io::stdin().read_line(&mut value){
+                                           Ok(_)=>{
+ 
+                                           }
+                                           Err(_)=>{
+                                               panic!("INPUT SYSTEM ERROR");
+                                           }
+                                       }
+                                       unsafe{
+                                         INPUT_STORAGE.push((i.to_string(),value.replace("\n","")));
+                                       }
+                                   }
+                               }
+ 
+                           }
+                           else{
+                               panic!("Check The INPUTS");
+                           }
+ 
+                       }
+                       else{
+                           panic!("Check For Statement '[' AND ']' tokens");
+                       }
+                  } 
+                  else{
+                      panic!("PLEASE CHECK THE SYNTAX FOR 'INPUT' STATEMENTS");
+                  }
+              }
+              else if all_query[0] == "CMP"{
+                  /*
+                  1.AXC(key)
+                  2.ITR<c<key
+                  3.INPUT(Index)
+                  4.NORMAL
+                  Step1:COLLECT KEYS,VALUES,RO,CO in different vectors inside a single part.
+                  */
+                 unsafe{
+                     let data =  cmp_fn(i.to_string());
+                   //  println!("{:?}",data);
+                     let functions:Vec<&str> = i.split(">>").collect();
+                             /*
+                             1.STORE->(AXC,ITR)
+                             2.EXIT->(SIMPLY EXIT THE PROGRAME)
+                             3.RUN->(RUN ANY INSTRUCTION SET BASED ON NAME AND OWNERSHIP ONLY BY GIVING THE NAME)
+                             */
+                     if data.len() > 0{
+                         //execute the true_command;
+                         if functions.len()>1{
+                             let true_command = functions[1].trim().trim_end();
+                             //we will run a loop to calculate the total number of functions requires.
+                             let splitted_commands:Vec<&str> = true_command.split("||").collect();
+                             //start changing the stuffs
+
+                             for i in splitted_commands{
+                                 let i_dip = i.trim().trim_end();
+                                 if i_dip.len()>4{
+                                    if i_dip[0..5].to_string() == "STORE"{
+ 
+                                        let command = i_dip[5..].trim().trim_end();
+                                          store(command);
+                                    }
+                                    else if i_dip[0..5].to_string() == "FUNC("{
+                                        let mut func_name = i_dip.replace("FUNC(","");
+                                        func_name = func_name.replace(")","");
+                                        //now we have the key, using the key get the instructions and send it to the instruction_executer;
+                                        unsafe{
+                                            let instructions = af::count_freq_tuple_return(FUNCTION.clone(),func_name.clone());
+                                            if instructions != ""{
+                                                instruction_executer(instructions);
+                                            } 
+                                            else{
+                                                panic!("Either Function {} not exist Or Instructions Inside The FUnction Is Empty",func_name);
+                                            }
+                                        }
+                                    }
+                                    else if i_dip.len()>6{
+                                         if i_dip[0..7].to_string() == "RETURN("{
+                                            let d_return_indicator = cmp_return(i_dip.to_string());
+                                            println!("Message {:?} Vector {:?}",d_return_indicator.0,d_return_indicator.1);
+                                            return;
+                                        }
+                                        else if i_dip.len()>10{
+                                             if i_dip[0..11].to_string() == "STORE_UPDATE"{
+                                                let command = i[11..].trim().trim_end();
+                                                store_update(command);
+                                            }
+                                        }
+                                    }
+                                  //  else if i[0..3].to_string() == "RUN"{
+                                        //We will see
+                                    //}
+                                 }
+                                  //Mark These Points For Future Use
+                             //YOU CAN DIVIDE FUNCTIONS USING || AND CAN RUN MULTIPLE FUNCTIONS
+                         }
+                     }
+                    } 
+                     else if data.len() == 0 {
+                         //execute the false command
+                         if functions.len()>2{
+                             let false_command = functions[2];
+                             let splitted_commands:Vec<&str> = false_command.split("||").collect();
+                           //  if splitted_commands.len()>0{
+                                 for i in splitted_commands{
+                                    if i.len()>4{
+                                        let i_dip = i.trim().trim_end().to_string();
+                                        if i_dip[0..5].to_string() == "STORE"{
+     
+                                            let command = i_dip[5..].trim().trim_end();
+                                              store(command);
+                                        }
+                                        else if i_dip[0..5].to_string() == "FUNC("{
+                                            let mut func_name = i_dip.replace("FUNC(","");
+                                            func_name = func_name.replace(")","");
+                                            //now we have the key, using the key get the instructions and send it to the instruction_executer;
+                                            unsafe{
+                                                let instructions = af::count_freq_tuple_return(FUNCTION.clone(),func_name.clone());
+                                                if instructions != ""{
+                                                    instruction_executer(instructions);
+                                                } 
+                                                else{
+                                                    panic!("Either Function {} not exist Or Instructions Inside The FUnction Is Empty",func_name);
+                                                }
+                                            }
+                                        }
+                                        else if i_dip.len()>6{
+                                             if i_dip[0..7].to_string() == "RETURN("{
+                                                let d_return_indicator = cmp_return(i_dip.to_string());
+                                                println!("Message {:?} Vector {:?}",d_return_indicator.0,d_return_indicator.1);
+                                                return;
+                                            }
+                                            else if i_dip.len()>10{
+                                                 if i_dip[0..11].to_string() == "STORE_UPDATE"{
+                                                    let command = i_dip[11..].trim().trim_end();
+                                                    store_update(command);
+                                                }
+                                            }
+                                        }
+                                      //  else if i[0..3].to_string() == "RUN"{
+                                            //We will see
+                                        //}
+                                     }
+                            }
+
+                        
+                         }
+                     }
+                     VECTORS.push(data);
+                 }
+              }
+             
+              else if all_query[0] == "UPDATE"{
+                  //UPDATE students IN schooldiary
+                  let split_update:Vec<&str> = i.split("SET").collect();
+                  //println!("{} {}",all_query[1],all_query[3]);
+                  if split_update.len()==2 &&  all_query[2]== "IN"{
+                      let class = all_query[1].to_string();
+                      let storage = all_query[3].to_string();
+                      unsafe{
+                          match CLASS.binary_search(&(storage,class)){
+                              Ok(index)=>{
+                                  //lets go ahead
+                                  let h =update_one(split_update[0].to_string(),index);
+                                  if h.len()>0{
+                         
+                                               for i in 0..h.len(){
+                                                update_second(split_update[1].to_string(),index,i);
+                                                 }
+                                  }
+                                  else{
+                                       print!("UPDATE CONDITIONS NOT SATISFIED");
+                                      }
+                              }
+                              Err(_)=>{
+                                  println!("STORAGE OR CLASS NOT FOUND");
+                              }
+                          }
+                          //call here
+                          let return_indicator:Vec<&str> = i.split(">>").collect();
+                                     if return_indicator.len() == 2{
+                                      let d_return_indicator = return_(i.to_string());
+                                      println!("Message {:?} Vector {:?}",d_return_indicator.0,d_return_indicator.1);
+                                      return;
+                                     } 
+                          
+                      }
+ 
+                     
+                  }
+                  else{
+                      println!("INSTRUCTION IS NOT AS PER THE ALIOTH STATEMENTS");
+                  }
+ 
+              }
+              else if all_query[0] == "DELETE"{
+                 //let split_update:Vec<&str> = i.split("SET").collect();
+                  if  all_query[2]== "IN"{
+                      let class = all_query[1].to_string();
+                      let storage = all_query[3].to_string();
+                      unsafe{
+                          match CLASS.binary_search(&(storage,class)){
+                              Ok(index)=>{
+                                  //lets go ahead
+                                  let h =update_one(i.to_string(),index);
+                                  if h.len()>0{
+                         
+                                               for i in 0..h.len(){
+                                                delete(index,i);
+                                                 }
+                                  }
+                                  else{
+                                       print!("DELETE CONDITIONS NOT SATISFIED");
+                                      }
+                              }
+                              Err(_)=>{
+                                  println!("STORAGE OR CLASS NOT FOUND");
+                              }
+                          }
+                          let return_indicator:Vec<&str> = i.split(">>").collect();
+                                     if return_indicator.len() == 2{
+                                      let d_return_indicator = return_(i.to_string());
+                                      println!("Message {:?} Vector {:?}",d_return_indicator.0,d_return_indicator.1);
+                                      return;
+                                     } 
+                      }
+                  }
+                  else{
+                      println!("INSTRUCTION IS NOT AS PER THE ALIOTH STATEMENTS");
+                  }
+              }
+              else if  all_query[0] == "CREATE" {
+                 let data_for:Vec<&str> = i.split("->").collect();
+                 let data_one:Vec<&str> = data_for[0].split(" ").collect();
+                 if data_one[1] == "STORAGE"{
+                     if data_one.len()>1{
+                         let mut store_name = data_one[2];
+                         let mut trial_name = "".to_string();
+                         if store_name.len()>3{
+                             if store_name[0..4].to_string() == "AXC("{
+                                 trial_name = store_name.replace("AXC(","");
+                                 trial_name = trial_name.replace(")","");
+                                 trial_name = access_value(trial_name);
+                                 store_name = &trial_name;
+ 
+                             }
+                             else if store_name[0..4].to_string() == "ITR<"{
+                                 let splitted:Vec<&str> = store_name.split("<").collect();
+                                 if splitted.len()==3{
+                                     //LETS HAVE IT
+                                     unsafe{
+                                         let index_count:usize = splited_query[1].parse().unwrap();
+                                         if index_count<VECTORS.len(){
+                                             let get = to_get(VECTORS[index_count].clone(),splitted[2]);
+                                             trial_name = get[get.len()-1].clone();
+                                             store_name = &trial_name;
+                                         }
+                                         else{
+                                             println!("DATA NOT FOUND OR STATEMENT IS NOT CORRECT");
+                                         }
+                                     }
+                                     
+                                 }
+                             }
+                         }
+                         else if store_name.len()>7{
+                             //this will go for the concate
+                             if store_name[0..7].to_string() == "CONCATE"{
+                                 trial_name = concate(store_name.to_string());
+                                 store_name = &trial_name;
+                             }
+                         }
+                         unsafe{
+                             //check for the name existence
+                             match STORAGE.binary_search(&store_name.to_string()){
+                                 Ok(_)=>{
+                                     println!("DATABASE WITH NAME {} ALREADY EXISTS",store_name);
+                                 }
+                                 Err(_)=>{
+                                     STORAGE.push(store_name.to_string());
+                                     println!("STORAGE CREATED ON CHAIN JADN");
+                                 }
+                             }
+                           }  
+                     }
+                 }
+                 else if data_one[1] == "CLASS" {
+                     //CREATE CLASS players IN digi
+                     if data_one.len() > 5{
+                         let mut class_name = data_one[2];
+                         if data_one[3] == "IN" && data_for.len() == 2{
+                             let mut storage_name = data_one[4];
+ 
+                             //Parse The Query And RESET THE VALUES INSIDE THE DATA.
+ 
+                             let mut trial_name = "".to_string();
+                             if storage_name.len()>3{
+                                 if storage_name[0..4].to_string() == "AXC("{
+                                     trial_name = storage_name.replace("AXC(","");
+                                     trial_name = trial_name.replace(")","");
+                                     trial_name = access_value(trial_name);
+                                     storage_name = &trial_name;
+     
+                                 }
+                                 else if storage_name[0..4].to_string() == "ITR<"{
+                                     let splitted:Vec<&str> = storage_name.split("<").collect();
+                                     if splitted.len()==3{
+                                         //LETS HAVE IT
+                                         unsafe{
+                                             let index_count:usize = splited_query[1].parse().unwrap();
+                                             if index_count<VECTORS.len(){
+                                                 let get = to_get(VECTORS[index_count].clone(),splitted[2]);
+                                                 trial_name = get[get.len()-1].clone();
+                                                 storage_name = &trial_name;
+                                             }
+                                             else{
+                                                 println!("DATA NOT FOUND OR STATEMENT IS NOT CORRECT");
+                                             }
+                                         }
+                                         
+                                     }
+                                 }
+                             }
+                             else if storage_name.len()>7{
+                                 //this will go for the concate
+                                 if storage_name[0..7].to_string() == "CONCATE"{
+                                     trial_name = concate(storage_name.to_string());
+                                     storage_name = &trial_name;
+                                 }
+                             }
+                             //PARSING FOR CLASS NAME
+                             let mut trial_name = "".to_string();
+                             if class_name.len()>3{
+                                 if class_name[0..4].to_string() == "AXC("{
+                                     trial_name = class_name.replace("AXC(","");
+                                     trial_name = trial_name.replace(")","");
+                                     trial_name = access_value(trial_name);
+                                     class_name = &trial_name;
+                                 }
+                                 else if class_name[0..4].to_string() == "ITR<"{
+                                     let splitted:Vec<&str> = class_name.split("<").collect();
+                                     if splitted.len()==3{
+                                         //LETS HAVE IT
+                                         unsafe{
+                                             let index_count:usize = splited_query[1].parse().unwrap();
+                                             if index_count<VECTORS.len(){
+                                                 let get = to_get(VECTORS[index_count].clone(),splitted[2]);
+                                                 trial_name = get[get.len()-1].clone();
+                                                 class_name = &trial_name;
+                                             }
+                                             else{
+                                                 println!("DATA NOT FOUND OR STATEMENT IS NOT CORRECT");
+                                             }
+                                         }
+                                         
+                                     }
+                                 }
+                             }
+                             else if class_name.len()>7{
+                                 //this will go for the concate
+                                 if class_name[0..7].to_string() == "CONCATE"{
+                                     trial_name = concate(class_name.to_string());
+                                     class_name = &trial_name;
+                                 }
+                             }
+                             //search for STORAGE EXISTENCE
+                             unsafe{
+                                 match STORAGE.binary_search(&storage_name.to_string()){
+                                     Ok(_) =>{
+                                         match CLASS.binary_search(&(storage_name.to_string(),class_name.to_string())){
+                                             Ok(_)=>{
+                                                 //THROW ERROR.
+                                                 println!("CLASS WITH NAME {} AlREADY EXIST IN STORAGE {}",class_name,storage_name);
+                                             }
+                                             Err(_)=>{
+                                                 //PARSING FOR COLUMN VALUES
+                                                 let mut data = data_for[1].replace("{"," ");
+                                                  data = data.replace("}"," ");
+                                                  data = data.trim().trim_end().to_string();
+                                                  let vec_data = insert::insert_column(data.split(",").collect());
+                                                     CLASS.push((storage_name.to_string(),class_name.to_string()));
+                                                     OBJECTS.push((class_name.to_string(),(vec_data,vec![])));
+                                                 println!("CLASS CREATED IN STORAGE {}",storage_name);
+                                             }
+                                         }
+                                     },
+                                     Err(_)=>{
+                                         println!("STOARGE {} NOT EXISTS",storage_name);
+                                     }
+                                 }
+                             }
+                         }
+                         else{
+                             println!("IN Statement Missing OR THE '->' Statement Missing");
+                         }
+                     }
+ 
+                 }
+                 /*
+                  1.Create STORE
+                  2.Create OB
+                  */
+                 let return_indicator:Vec<&str> = i.split(">>").collect();
+                                     if return_indicator.len() == 2{
+                                      let d_return_indicator = return_(i.to_string());
+                                      println!("Message {:?} Vector {:?}",d_return_indicator.0,d_return_indicator.1);
+                                      return;
+                                     } 
+                  
+              }
+              else if all_query[0] == "STORE"{
+                 // println!("{:?}",all_query[1]);
+                  store(all_query[1]);
+                  let return_indicator:Vec<&str> = i.split(">>").collect();
+                                     if return_indicator.len() == 2{ 
+                                      let d_return_indicator = return_(i.to_string());
+                                      println!("Message {:?} Vector {:?}",d_return_indicator.0,d_return_indicator.1);
+                                      return;
+                                     } 
+              }
+              else if all_query[0] == "STORE_UPDATE"{
+                  store_update(all_query[1]);
+                  let return_indicator:Vec<&str> = i.split(">>").collect();
+                                     if return_indicator.len() == 2{
+                                      let d_return_indicator = return_(i.to_string());
+                                      println!("Message {:?} Vector {:?}",d_return_indicator.0,d_return_indicator.1);
+                                      return;
+                                     } 
+              }
+            else if all_query[0].len()>4 && all_query[0][0..5].to_string() == "FUNC("{
+                //now we have to check the value of the functions by calling first removeing FUNC( and ')' and send the instructions to the instructions executers
+                let mut func_name = i.replace("FUNC(","");
+                func_name = func_name.replace(")","");
+                //now we have the key, using the key get the instructions and send it to the instruction_executer;
+                unsafe{
+                    let instructions = af::count_freq_tuple_return(FUNCTION.clone(),func_name.clone());
+                    if instructions != ""{
+                        instruction_executer(instructions);
+                    } 
+                    else{
+                        panic!("Either Function {} not exist Or Instructions Inside The FUnction Is Empty",func_name);
+                    }
+                }
+            }
+         }
+        //summary of datas
+        /* 
+        unsafe{
+          println!("{:?}",VECTORS);
+      
+        }
+        */
+        }
+    }
+    //let mut vectors_of_data:Vec<&str> =vec![] ;
 }

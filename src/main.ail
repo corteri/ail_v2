@@ -1,7 +1,9 @@
-CREATE STORAGE corteri;
-CREATE CLASS users IN corteri -> {firstname,lastname};
-INPUT -> [firstname,lastname];
-INSERT INTO users IN corteri -> [{firstname:INPUT(firstname),lastname:INPUT(lastname)}];
-GET FROM users IN corteri;
-UPDATE users IN corteri where firstname eq INPUT(firstname) SET {firstname:INPUT(lastname)};
-GET FROM users IN corteri >> RETURN(true,<1|2>);
+FUN create_storage ->>
+CREATE STORAGE schooldiary;
+FUNC(create_class);
+<<-
+
+FUN create_class ->>
+CREATE CLASS students IN schooldiary -> {firstname,lastname};<<-
+
+CMP 4 eq 5 >>  >> FUNC(create_storage);

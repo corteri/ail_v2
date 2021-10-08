@@ -28,3 +28,24 @@ pub fn count_freq(vector:Vec<&str>,value:&str)->i32{
     }
     c
 }
+
+pub fn count_freq_tuple(vector:Vec<(String,String)>,value:String)->i32{
+    let mut c  = 0;
+    for i in vector{
+        if i.0 == value{
+            c = c+1;
+        }
+    }
+    c
+}
+
+pub fn count_freq_tuple_return(vector:Vec<(String,String)>,value:String)->String{
+    let mut string_to_return = String::from("");
+
+    for i in vector{
+        if i.0 == value{
+            string_to_return = i.1;
+        }
+    }
+    string_to_return
+}
