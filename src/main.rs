@@ -15,7 +15,7 @@ static mut LOCATION_STORAGE:Vec<Vec<String>> = vec![];
 static mut LOCATION:Vec<(String,usize)> = vec![];
 static  mut INPUT_STORAGE:Vec<(String,String)> = vec![];
 static  mut FUNCTION:Vec<(String,String)> = vec![];
-static  mut FUNCR:Vec<(String,Vec<(String,Vec<Vec<String>>)>)> = vec![];
+static  mut FUNCR:Vec<(String,String,Vec<Vec<String>>)> = vec![];
 
 static  mut STORAGE:Vec<String> = vec![];
 static  mut CLASS:Vec<(String,String)> = vec![];
@@ -2020,6 +2020,224 @@ fn return_(i:String)->(String,Vec<Vec<String>>){
     }
 }
 
+
+
+fn rfv_(i:String)->(String,String,Vec<Vec<String>>){
+    unsafe{
+        let return_indicator:Vec<&str> = i.split(">>").collect();
+        let mut key_to_send = "".to_string();
+        let mut vector_to_send:Vec<Vec<String>> = vec![];
+        let mut name_to_send:String = "".to_string();
+        if return_indicator.len() == 2{
+            let mut return_stat = return_indicator[1].to_string();
+            return_stat = return_stat.trim().trim_end().to_string();
+            if return_stat[0..4].to_string() == "RFV("{
+                return_stat = return_stat.replace("RFV(","");
+                return_stat = return_stat.replace(")","");
+                return_stat = return_stat.trim().trim_end().to_string();
+                let split_for_return:Vec<&str> = return_stat.split(",").collect();
+                //check for the end values of the splitted arguments
+                if split_for_return.len() == 3{
+                    name_to_send = split_for_return[0].to_string();
+                    if split_for_return[1].len()>3{
+                     //   println!("{:?} splitter",split_for_return[0][0..4].to_string());
+                        if split_for_return[1][0..4].to_string() == "AXC("{
+                            //ACCESS THE KEY AND THEN GO FOR THE VECTOR PART
+                            let mut k = split_for_return[1].replace("AXC(","");
+                             k = k.replace(")","");
+                             //now I have the key
+                             k = access_value(k);
+                             key_to_send = k;
+                        } 
+                        else if split_for_return[1][0..4].to_string() == "ITR<"{
+                            
+                                let itr_splitter:Vec<&str> = split_for_return[1].split("<").collect();
+                                if itr_splitter.len() == 3{
+                                    let index:usize = itr_splitter[1].parse().unwrap();
+                                    if VECTORS.len()>index{
+                                        let k = to_get(VECTORS[index].clone(),itr_splitter[2]);
+                                        key_to_send = k[k.len()-1].to_string();
+                                    }
+                                    else{
+                                        println!("Array Out Of Index");
+                                    }
+                                } 
+                                else{
+                                    println!("ITR SPLITTER IS NOT WORKING");
+                                }
+                        }
+                        else if split_for_return[1].len()>4{
+                            if split_for_return[1][0..5].to_string() == "UID()"{
+                                key_to_send = af::generate_uid();
+                            }
+                            else if split_for_return[1][0..6].to_string() == "INPUT("{
+                                key_to_send = split_for_return[0].replace("INPUT(","");
+                                key_to_send = key_to_send.replace(")","");
+                                key_to_send = give_value(key_to_send);
+                            }
+                            else{
+                                key_to_send = split_for_return[1].to_string();
+                            }
+                        }
+                        else if split_for_return[1].len()>9{
+                            if split_for_return[1][0..10].to_string() == "TIMESTAMP("{
+                                key_to_send = af::time_stamp();
+                            }
+                            else{
+                                key_to_send = split_for_return[1].to_string();
+                            }
+                        }
+                        else{
+                            key_to_send = split_for_return[1].to_string();
+                        }
+                    }
+                    //check for AXC AND OTHER DATAS
+                    else{
+                        key_to_send = split_for_return[1].to_string();
+                    }
+                    //Accessing the second value and writting the conditions for it.
+                    let mut vector_sender = split_for_return[2].trim().trim_end().to_string();
+                   // println!("{:?} and {:?}",vector_sender.chars().nth(0),vector_sender.chars().nth(vector_sender.len()-1));
+                    if vector_sender.chars().nth(0) == Some('<') && vector_sender.chars().nth(vector_sender.len()-1)== Some('>'){
+                        vector_sender = vector_sender.replace("<","");
+                        vector_sender = vector_sender.replace(">","");
+                        vector_sender = vector_sender.trim().trim_end().to_string();
+                        let  vec_collector:Vec<&str> = vector_sender.split("|").collect();
+                     //   println!("{:?}",vec_collector);
+                        if vec_collector.len()>0 && vec_collector[0]!=""{
+                            for i in vec_collector{
+                                let index:usize = i.parse().unwrap();
+                                if index<VECTORS.len(){
+                                    vector_to_send.push(VECTORS[index].clone());
+                                }
+                            }
+                        }
+                    }
+                    else{
+                        //throw error
+                        println!("Possibly An Error Inside The Programe");
+                    }
+                }
+                else{
+                    println!("RETURN VALUE MUST CONSIST OF 2 Statements Sparated by ','");
+                }
+            }
+        }
+        (name_to_send,key_to_send,vector_to_send)     
+    }
+}
+
+
+
+
+
+
+
+
+fn cmp_rfv(i:String)->(String,String,Vec<Vec<String>>){
+    let mut string_to_send = "".to_string();
+    let mut vec_to_send:Vec<Vec<String>> = vec![];
+    let mut name_to_send = "".to_string();
+    let mut i_string_to_send = i.replace("RFV(","");
+    i_string_to_send = i_string_to_send.trim().trim_end().to_string();
+    let splitter:Vec<&str> = i_string_to_send.split(",").collect();
+    if splitter.len() == 3{
+        name_to_send = splitter[0].to_string();
+        if splitter[1].len()>3{
+            if splitter[1][0..4].to_string() == "AXC("{
+                //ACCESS THE KEY AND THEN GO FOR THE VECTOR PART
+                let mut k = splitter[0].replace("AXC(","");
+                 k = k.replace(")","");
+                 //now I have the key
+                 k = access_value(k);
+                 string_to_send = k;
+            } 
+            else if splitter[1][0..4].to_string() == "ITR<"{
+                
+                    let itr_splitter:Vec<&str> = splitter[1].split("<").collect();
+                    unsafe{
+                    if itr_splitter.len() == 3{
+                        let index:usize = itr_splitter[1].parse().unwrap();
+                        if VECTORS.len()>index{
+                            let k = to_get(VECTORS[index].clone(),itr_splitter[2]);
+                            string_to_send = k[k.len()-1].to_string();
+                        }
+                        else{
+                            println!("Array Out Of Index");
+                        }
+                    } 
+                    else{
+                        println!("ITR SPLITTER IS NOT WORKING");
+                    }
+                }
+                
+            }
+            else{
+                string_to_send = splitter[1].to_string();
+            }
+        }
+        else if splitter[1].len()>9{
+            if splitter[1][0..10].to_string() == "TIMESTAMP("{
+                string_to_send = af::time_stamp();
+            }
+             else if splitter[1][0..6].to_string() == "INPUT("{
+                string_to_send = splitter[1].replace("INPUT(","");
+                string_to_send = string_to_send.replace(")","");
+                string_to_send = give_value(string_to_send);
+            }
+            else{
+                string_to_send = splitter[1].to_string();
+            }
+        }
+        else if splitter[1].len()>4{
+            if splitter[1][0..5].to_string() == "UID()"{
+                string_to_send = af::generate_uid();
+            }
+            else if splitter[1][0..6].to_string() == "INPUT("{
+                string_to_send = splitter[0].replace("INPUT(","");
+                string_to_send = string_to_send.replace(")","");
+                string_to_send = give_value(string_to_send);
+            }
+            else{
+                string_to_send = splitter[1].to_string();
+            }
+        }
+        else{
+            string_to_send = splitter[0].to_string();
+        }
+
+        let mut vector_sender = splitter[2].trim().trim_end().to_string();
+        unsafe{
+            //println!("{:?}",splitter);
+           // println!("{:?} and {:?}",vector_sender.chars().nth(0),vector_sender.chars().nth(vector_sender.len()-1));
+        if vector_sender.chars().nth(0) == Some('<') && vector_sender.chars().nth(vector_sender.len()-1)== Some('>'){
+            vector_sender = vector_sender.replace("<","");
+            vector_sender = vector_sender.replace(">","");
+            vector_sender = vector_sender.trim().trim_end().to_string();
+            let  vec_collector:Vec<&str> = vector_sender.split("|").collect();
+            if vec_collector.len()>0 && vec_collector[0]!=""{
+            for i in vec_collector{
+                let index:usize = i.parse().unwrap();
+                if index<VECTORS.len(){
+                    vec_to_send.push(VECTORS[index].clone());
+                }
+            }
+        }
+        }
+        else{
+            //throw error
+            println!("Possibly An Error Inside The Programe");
+        }
+    }
+    }
+    else{
+        panic!("RFV needs three arguments RFV(name,message,vec)");
+    }
+
+    (name_to_send,string_to_send,vec_to_send)
+
+}
+
 fn cmp_return(i:String)->(String,Vec<Vec<String>>){
     //i would be like RETURN(AXC(key)), ITR<Index<key,normal message;
     let mut string_to_send = "".to_string();
@@ -2269,10 +2487,29 @@ fn instruction_executer(querys_:String){
                                      }
                                      let return_indicator:Vec<&str> = i.split(">>").collect();
                                      if return_indicator.len() == 2{
-                                      let d_return_indicator = return_(i.to_string());
-                                      println!("Message {:?} Vector {:?}",d_return_indicator.0,d_return_indicator.1);
-                                      return;
-                                     }                                
+                                        //split it and check it.
+                                        if return_indicator[1].len()>3{
+                                            if return_indicator[1][0..4].to_string() == "RFV("{
+                                                //this is going to be tough
+                                                let d_return_indicator = rfv_(i.to_string());
+                                                //check for name in functions
+                                                unsafe{
+                                                   let counter =  af::count_freq_tuple_thrice(FUNCR.clone(),d_return_indicator.0.clone());
+                                                   if counter == 0{
+                                                       FUNCR.push(d_return_indicator);
+                                                   }
+                                                   else{
+                                                       panic!("value with name {} already exists",d_return_indicator.0);
+                                                   }
+                                                }
+                                            } 
+                                            else if return_indicator[1][0..7].to_string() == "RETURN("{
+                                               let d_return_indicator = return_(i.to_string());
+                                               println!("Message {:?} Vector {:?}",d_return_indicator.0,d_return_indicator.1);
+                                               return;
+                                            }
+                                        }
+                                    }                            
                               },
                               Err(_)=>println!("CLASS OR STORAGE NOT FOUND"),
                           }
@@ -2324,10 +2561,29 @@ fn instruction_executer(querys_:String){
                      }
                                      let return_indicator:Vec<&str> = i.split(">>").collect();
                                      if return_indicator.len() == 2{
-                                      let d_return_indicator = return_(i.to_string());
-                                      println!("Message {:?} Vector {:?}",d_return_indicator.0,d_return_indicator.1);
-                                      return;
-                                     }       
+                                        //split it and check it.
+                                        if return_indicator[1].len()>3{
+                                            if return_indicator[1][0..4].to_string() == "RFV("{
+                                                //this is going to be tough
+                                                let d_return_indicator = rfv_(i.to_string());
+                                                //check for name in functions
+                                                unsafe{
+                                                   let counter =  af::count_freq_tuple_thrice(FUNCR.clone(),d_return_indicator.0.clone());
+                                                   if counter == 0{
+                                                       FUNCR.push(d_return_indicator);
+                                                   }
+                                                   else{
+                                                       panic!("value with name {} already exists",d_return_indicator.0);
+                                                   }
+                                                }
+                                            } 
+                                            else if return_indicator[1][0..7].to_string() == "RETURN("{
+                                               let d_return_indicator = return_(i.to_string());
+                                               println!("Message {:?} Vector {:?}",d_return_indicator.0,d_return_indicator.1);
+                                               return;
+                                            }
+                                        }
+                                    }    
                    }  
                  
                  
@@ -2418,11 +2674,25 @@ fn instruction_executer(querys_:String){
                                         let command = i_dip[5..].trim().trim_end();
                                           store(command);
                                     }
+                                    else if i_dip[0..4].to_string() == "RFV("{
+                                        //create functions for it
+                                        let d = cmp_rfv(i_dip.to_string());
+                                        
+                                            let counter = af::count_freq_tuple_thrice(FUNCR.clone(),d.0.clone());
+                                            if counter == 0{
+                                                FUNCR.push(d);
+                                            }
+                                            else{
+                                                panic!("value with key {} already exists",d.0);
+                                            }
+                                        
+
+                                    }
                                     else if i_dip[0..5].to_string() == "FUNC("{
                                         let mut func_name = i_dip.replace("FUNC(","");
                                         func_name = func_name.replace(")","");
                                         //now we have the key, using the key get the instructions and send it to the instruction_executer;
-                                        unsafe{
+                                        
                                             let instructions = af::count_freq_tuple_return(FUNCTION.clone(),func_name.clone());
                                             if instructions != ""{
                                                 instruction_executer(instructions);
@@ -2430,7 +2700,7 @@ fn instruction_executer(querys_:String){
                                             else{
                                                 panic!("Either Function {} not exist Or Instructions Inside The FUnction Is Empty",func_name);
                                             }
-                                        }
+                                        
                                     }
                                     else if i_dip.len()>6{
                                          if i_dip[0..7].to_string() == "RETURN("{
@@ -2468,11 +2738,25 @@ fn instruction_executer(querys_:String){
                                             let command = i_dip[5..].trim().trim_end();
                                               store(command);
                                         }
+                                        else if i_dip[0..4].to_string() == "RFV("{
+                                            //create functions for it
+                                            let d = cmp_rfv(i_dip.to_string());
+                                            
+                                                let counter = af::count_freq_tuple_thrice(FUNCR.clone(),d.0.clone());
+                                                if counter == 0{
+                                                    FUNCR.push(d);
+                                                }
+                                                else{
+                                                    panic!("value with key {} already exists",d.0);
+                                                }
+                                            
+    
+                                        }
                                         else if i_dip[0..5].to_string() == "FUNC("{
                                             let mut func_name = i_dip.replace("FUNC(","");
                                             func_name = func_name.replace(")","");
                                             //now we have the key, using the key get the instructions and send it to the instruction_executer;
-                                            unsafe{
+                                            
                                                 let instructions = af::count_freq_tuple_return(FUNCTION.clone(),func_name.clone());
                                                 if instructions != ""{
                                                     instruction_executer(instructions);
@@ -2480,7 +2764,7 @@ fn instruction_executer(querys_:String){
                                                 else{
                                                     panic!("Either Function {} not exist Or Instructions Inside The FUnction Is Empty",func_name);
                                                 }
-                                            }
+                                            
                                         }
                                         else if i_dip.len()>6{
                                              if i_dip[0..7].to_string() == "RETURN("{
@@ -2760,9 +3044,28 @@ fn instruction_executer(querys_:String){
                   */
                  let return_indicator:Vec<&str> = i.split(">>").collect();
                                      if return_indicator.len() == 2{
-                                      let d_return_indicator = return_(i.to_string());
-                                      println!("Message {:?} Vector {:?}",d_return_indicator.0,d_return_indicator.1);
-                                      return;
+                                         //split it and check it.
+                                         if return_indicator[1].len()>3{
+                                             if return_indicator[1][0..4].to_string() == "RFV("{
+                                                 //this is going to be tough
+                                                 let d_return_indicator = rfv_(i.to_string());
+                                                 //check for name in functions
+                                                 unsafe{
+                                                    let counter =  af::count_freq_tuple_thrice(FUNCR.clone(),d_return_indicator.0.clone());
+                                                    if counter == 0{
+                                                        FUNCR.push(d_return_indicator);
+                                                    }
+                                                    else{
+                                                        panic!("value with name {} already exists",d_return_indicator.0);
+                                                    }
+                                                 }
+                                             } 
+                                             else if return_indicator[1][0..7].to_string() == "RETURN("{
+                                                let d_return_indicator = return_(i.to_string());
+                                                println!("Message {:?} Vector {:?}",d_return_indicator.0,d_return_indicator.1);
+                                                return;
+                                             }
+                                         }
                                      } 
                   
               }
@@ -2770,20 +3073,58 @@ fn instruction_executer(querys_:String){
                  // println!("{:?}",all_query[1]);
                   store(all_query[1]);
                   let return_indicator:Vec<&str> = i.split(">>").collect();
-                                     if return_indicator.len() == 2{ 
-                                      let d_return_indicator = return_(i.to_string());
-                                      println!("Message {:?} Vector {:?}",d_return_indicator.0,d_return_indicator.1);
-                                      return;
-                                     } 
+                  if return_indicator.len() == 2{
+                    //split it and check it.
+                    if return_indicator[1].len()>3{
+                        if return_indicator[1][0..4].to_string() == "RFV("{
+                            //this is going to be tough
+                            let d_return_indicator = rfv_(i.to_string());
+                            //check for name in functions
+                            unsafe{
+                               let counter =  af::count_freq_tuple_thrice(FUNCR.clone(),d_return_indicator.0.clone());
+                               if counter == 0{
+                                   FUNCR.push(d_return_indicator);
+                               }
+                               else{
+                                   panic!("value with name {} already exists",d_return_indicator.0);
+                               }
+                            }
+                        } 
+                        else if return_indicator[1][0..7].to_string() == "RETURN("{
+                           let d_return_indicator = return_(i.to_string());
+                           println!("Message {:?} Vector {:?}",d_return_indicator.0,d_return_indicator.1);
+                           return;
+                        }
+                    }
+                } 
               }
               else if all_query[0] == "STORE_UPDATE"{
                   store_update(all_query[1]);
                   let return_indicator:Vec<&str> = i.split(">>").collect();
-                                     if return_indicator.len() == 2{
-                                      let d_return_indicator = return_(i.to_string());
-                                      println!("Message {:?} Vector {:?}",d_return_indicator.0,d_return_indicator.1);
-                                      return;
-                                     } 
+                  if return_indicator.len() == 2{
+                    //split it and check it.
+                    if return_indicator[1].len()>3{
+                        if return_indicator[1][0..4].to_string() == "RFV("{
+                            //this is going to be tough
+                            let d_return_indicator = rfv_(i.to_string());
+                            //check for name in functions
+                            unsafe{
+                               let counter =  af::count_freq_tuple_thrice(FUNCR.clone(),d_return_indicator.0.clone());
+                               if counter == 0{
+                                   FUNCR.push(d_return_indicator);
+                               }
+                               else{
+                                   panic!("value with name {} already exists",d_return_indicator.0);
+                               }
+                            }
+                        } 
+                        else if return_indicator[1][0..7].to_string() == "RETURN("{
+                           let d_return_indicator = return_(i.to_string());
+                           println!("Message {:?} Vector {:?}",d_return_indicator.0,d_return_indicator.1);
+                           return;
+                        }
+                    }
+                } 
               }
             else if all_query[0].len()>4 && all_query[0][0..5].to_string() == "FUNC("{
                 //now we have to check the value of the functions by calling first removeing FUNC( and ')' and send the instructions to the instructions executers

@@ -49,3 +49,13 @@ pub fn count_freq_tuple_return(vector:Vec<(String,String)>,value:String)->String
     }
     string_to_return
 }
+
+pub fn count_freq_tuple_thrice(vector:Vec<(String,String,Vec<Vec<String>>)>,value:String)->i32{
+    let mut c  = 0;
+    for i in vector{
+        if i.0 == value{
+            c = c+1;
+        }
+    }
+    c
+}
