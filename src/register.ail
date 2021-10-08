@@ -1,0 +1,18 @@
+INPUT{firstname,lastname,number,email,address,ccode,password,type,organization,role,fed_id,country};
+STORE([{roleToSend:INPUT(9)}|{organizationToSend:INPUT(10)}]);
+CMP INPUT(9) eq undefined OR INPUT(9) eq 'undefined' || INPUT(9) eq false >> STORE_UPDATE({roleToSend:'Not Available'}) >> ;
+CMP INPUT(10) eq undefined OR INPUT(10) eq 'undefined' || INPUT(10) eq false >> STORE_UPDATE({organizationToSend:'Not Available'}) >> ;
+STORE([{new_check:HASH(INPUT[6])}]);
+GET FROM scout IN scouts where email eq INPUT(3) AND email eq INPUT(3);
+CMP INPUT(3) eq ITR<5<email OR INPUT(4) eq ITR<5<phone eq INPUT(9) >>RETURN('EMAIL ALREADY EXISTS')>> ;
+INSERT INTO store IN stores -> [{firstname:INPUT(0),lastname:INPUT(1),number:INPUT(2),email:INPUT(3),address:INPUT(4),ccode:INPUT(5),password:INPUT(6),type:INPUT(7),role:roleToSend,organization:AXC(organizationToSend),fed_id:INPUT(10),country:INPUT(11)}];
+STORE([{user_search:CONCAT('user_search',ITR<c<uid),user_profile:CONCAT('user_profile',ITR<c<uid),user_projects:CONCAT('user_projects',ITR<c<uid),user_story:CONCAT('user_story',ITR<c<uid),user_cart:CONCAT('user_cart',ITR<c<uid),user_order:CONCAT('user_order',ITR<c<uid),notification:CONCAT('user_notification',ITR<c<uid),logs:CONCAT('user_logs_',ITR<c<uid)}]);
+CREATE CLASS AXC(user_search) IN scouts ->[];
+CREATE CLASS AXC(user_profile) IN scouts ->[];
+CREATE CLASS AXC(user_projects) IN scouts ->[];
+CREATE CLASS AXC(user_story) IN scouts ->[];
+CREATE CLASS AXC(user_cart) IN scouts ->[];
+CREATE CLASS AXC(user_order) IN scouts ->[];
+CREATE CLASS AXC(notification) IN scouts ->[];
+CREATE CLASS AXC(logs) IN scouts ->[];
+RETURN("TRUE");
