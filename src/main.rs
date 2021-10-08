@@ -133,6 +133,9 @@ let mut data = (vec![],vec![]);
                let new_string = af::generate_uid();
                values[i] = new_string;
            }
+           else if values[i][0..4].to_string() == "AFV("{
+               values[i] = afv(values[i][4..values[i].len()-1].to_string()).1;
+           }
            else if values[i].len()>5{
                if values[i][0..6].to_string() == "INPUT(" && values[i].to_string().chars().nth(values[i].len()-1) == Some(')'){
                    let mut new_string = values[i].replace("INPUT(","");
@@ -165,6 +168,8 @@ let mut data = (vec![],vec![]);
         if keys[i][0..5].to_string() == "UID()"{
             let new_string = af::generate_uid();
             keys[i] = new_string;
+        }else if keys[i][0..4].to_string() == "AFV("{
+            keys[i] = afv(keys[i][4..keys[i].len()-1].to_string()).1;
         }
         else if keys[i].len()>5{
             if keys[i][0..6].to_string() == "INPUT(" && keys[i].to_string().chars().nth(keys[i].len()-1) == Some(')'){
@@ -598,6 +603,10 @@ fn store(store_query:&str){
                 new_value = af::generate_uid();
                 key_value[1] = &new_value;
                }
+               else if key_value[1][0..4].to_string() == "AFV("{
+                new_value = afv(key_value[1][4..key_value[1].len()-1].to_string()).1;
+                key_value[1] = &new_value;
+            }
                else if key_value[1][0..6].to_string() == "INPUT("{
                        
                 // if keys[i][0..6].to_string() == "INPUT(" && keys[i].to_string().chars().nth(keys[i].len()-1) == Some(')'){
@@ -624,6 +633,10 @@ fn store(store_query:&str){
                 else if key_value[1].len()>4{
                     if key_value[1][0..5].to_string() == "UID()"{
                         new_value = af::generate_uid();
+                        key_value[1] = &new_value;
+                    }
+                    else if key_value[1][0..4].to_string() == "AFV("{
+                        new_value = afv(key_value[1][4..key_value[1].len()-1].to_string()).1;
                         key_value[1] = &new_value;
                     }
                     else if key_value[1].len()>5{
@@ -787,6 +800,9 @@ let mut conditional_operator:Vec<String> = vec![];
             let new_string = af::generate_uid();
             values[i] = new_string;
         }
+        else if values[i][0..4].to_string() == "AFV("{
+            values[i] = afv(values[i][4..values[i].len()-1].to_string()).1;
+        }
         else if values[i].len()>5{
             if values[i][0..6].to_string() == "INPUT(" && values[i].to_string().chars().nth(values[i].len()-1) == Some(')'){
                 let mut new_string = values[i].replace("INPUT(","");
@@ -818,6 +834,9 @@ let mut conditional_operator:Vec<String> = vec![];
         if keys[i][0..5].to_string() == "UID()"{
             let new_string = af::generate_uid();
             keys[i] = new_string;
+        }
+        else if keys[i][0..4].to_string() == "AFV("{
+            keys[i] = afv(values[i][4..keys[i].len()-1].to_string()).1;
         }
         else if keys[i].len()>5{
             if keys[i][0..6].to_string() == "INPUT(" && keys[i].to_string().chars().nth(keys[i].len()-1) == Some(')'){
@@ -1322,6 +1341,9 @@ fn update_one(query:String,index:usize)->Vec<usize>{
             let new_string = af::generate_uid();
             values[i] = new_string;
         }
+        else if values[i][0..4].to_string() == "AFV("{
+            values[i] = afv(values[i][4..values[i].len()-1].to_string()).1;
+        }
         else if values[i].len()>5{
             if values[i][0..6].to_string() == "INPUT(" && values[i].to_string().chars().nth(values[i].len()-1) == Some(')'){
                 let mut new_string = values[i].replace("INPUT(","");
@@ -1354,6 +1376,9 @@ fn update_one(query:String,index:usize)->Vec<usize>{
         if keys[i][0..5].to_string() == "UID()"{
             let new_string = af::generate_uid();
             keys[i] = new_string;
+        }
+        else if keys[i][0..4].to_string() == "AFV("{
+            keys[i] = afv(values[i][4..keys[i].len()-1].to_string()).1;
         }
         else if keys[i].len()>5{
             if keys[i][0..6].to_string() == "INPUT(" && keys[i].to_string().chars().nth(keys[i].len()-1) == Some(')'){
@@ -1647,6 +1672,9 @@ fn update_second(query:String,index:usize,index1:usize){
              //Check The Length Of The Programe For The Rest Of The Functions And It Is The Necessary Evil
              values[i] = af::generate_uid();
          }
+         else if values[i][0..4].to_string() == "AFV("{
+                values[i] = afv(values[i][4..values[i].len()-1].to_string()).1;
+         }
          //add the length of the programes
          if values[i].len()>5{
              if values[i][0..6].to_string() == "INPUT("{
@@ -1744,6 +1772,10 @@ fn store_update(store_query:&str){
                         new_value = af::generate_uid();
                         key_value[1] = &new_value;
                     }
+                    else if key_value[1][0..4].to_string() == "AFV("{
+                        new_value = afv(key_value[1][4..key_value[1].len()-1].to_string()).1;
+                        key_value[1] = &new_value;
+                    }
                     else if key_value[1][0..6].to_string() == "INPUT("{
                        
                            // if keys[i][0..6].to_string() == "INPUT(" && keys[i].to_string().chars().nth(keys[i].len()-1) == Some(')'){
@@ -1770,6 +1802,10 @@ fn store_update(store_query:&str){
                         else if key_value[1].len()>4{
                             if key_value[1][0..5].to_string() == "UID()"{
                                 new_value = af::generate_uid();
+                                key_value[1] = &new_value;
+                            }
+                            else if key_value[1][0..4].to_string() == "AFV("{
+                                new_value = afv(key_value[1][4..key_value[1].len()-1].to_string()).1;
                                 key_value[1] = &new_value;
                             }
                             else if key_value[1].len()>5{
@@ -1883,6 +1919,9 @@ fn concate(values:String)->String{
                     if i[0..5].to_string() == "UID()"{
                         new_string.push_str(&af::generate_uid());
                     }
+                    else if i[0..4].to_string() == "AFV("{
+                        new_string.push_str(&afv(i[4..i.len()-1].to_string()).1);
+                    }
                 else if i.len()>5{
                     if i[0..6].to_string() == "INPUT("{
                             // if keys[i][0..6].to_string() == "INPUT(" && keys[i].to_string().chars().nth(keys[i].len()-1) == Some(')'){
@@ -1962,6 +2001,10 @@ fn return_(i:String)->(String,Vec<Vec<String>>){
                         else if split_for_return[0].len()>4{
                             if split_for_return[0][0..5].to_string() == "UID()"{
                                 key_to_send = af::generate_uid();
+                            }
+                            else if split_for_return[0][0..4].to_string() == "AFV("{
+                                key_to_send = afv(split_for_return[0][4..split_for_return[0].len()-1].to_string()).1;
+                            //    key_value[1] = &new_value;
                             }
                             else if split_for_return[0][0..6].to_string() == "INPUT("{
                                 key_to_send = split_for_return[0].replace("INPUT(","");
@@ -2069,6 +2112,10 @@ fn rfv_(i:String)->(String,String,Vec<Vec<String>>){
                         else if split_for_return[1].len()>4{
                             if split_for_return[1][0..5].to_string() == "UID()"{
                                 key_to_send = af::generate_uid();
+                            }
+                            else if split_for_return[0][0..4].to_string() == "AFV("{
+                                key_to_send = afv(split_for_return[0][4..split_for_return[0].len()-1].to_string()).1;
+                            //    key_value[1] = &new_value;
                             }
                             else if split_for_return[1][0..6].to_string() == "INPUT("{
                                 key_to_send = split_for_return[0].replace("INPUT(","");
@@ -2193,6 +2240,10 @@ fn cmp_rfv(i:String)->(String,String,Vec<Vec<String>>){
             if splitter[1][0..5].to_string() == "UID()"{
                 string_to_send = af::generate_uid();
             }
+            else if splitter[0][0..4].to_string() == "AFV("{
+                string_to_send = afv(splitter[0][4..splitter[0].len()-1].to_string()).1;
+            //    key_value[1] = &new_value;
+            }
             else if splitter[1][0..6].to_string() == "INPUT("{
                 string_to_send = splitter[0].replace("INPUT(","");
                 string_to_send = string_to_send.replace(")","");
@@ -2297,6 +2348,10 @@ fn cmp_return(i:String)->(String,Vec<Vec<String>>){
             else if splitter[0].len()>4{
                 if splitter[0][0..5].to_string() == "UID()"{
                     string_to_send = af::generate_uid();
+                }
+                else if splitter[0][0..4].to_string() == "AFV("{
+                    string_to_send = afv(splitter[0][4..splitter[0].len()-1].to_string()).1;
+                //    key_value[1] = &new_value;
                 }
                 else if splitter[0][0..6].to_string() == "INPUT("{
                     string_to_send = splitter[0].replace("INPUT(","");
@@ -3152,4 +3207,24 @@ fn instruction_executer(querys_:String){
         }
     }
     //let mut vectors_of_data:Vec<&str> =vec![] ;
+}
+
+fn afv(key:String)->(String,String,Vec<Vec<String>>){
+    unsafe{
+        let mut value_to_send:Vec<(String,String,Vec<Vec<String>>)> =vec![];
+        let mut check = false;
+        for i in FUNCR.clone(){
+            if i.0 == key{
+                check=true;
+                value_to_send.push(i);
+                break;
+            }
+        }
+        if check{
+            value_to_send[0].clone()
+        }
+        else{
+            panic!("Key {} Not Found",key);
+        }
+    }
 }
