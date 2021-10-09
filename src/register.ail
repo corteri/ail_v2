@@ -1,38 +1,5 @@
-FUN login -> {
-    INPUT -> [firstname,lastname];
-    CMP INPUT(firstname) eq ITR<0<firstname AND INPUT(lastname) eq ITR<0<lastname >> RF(true) >> RF(false);
-};
-
-FUN check -> {
- INPUT -> [firstname,lastname];
- GET FROM users IN corteri where firstname eq INPUT(firstname) AND lastname eq INPUT(lastname);
- CMP INPUT(firstname) eq ITR<0<firstname AND INPUT(lastname) eq ITR<0<lastname >> FUNC(register) >> RETURN(false,<>);
- CMP RV(register) eq true >>RF(true)>>RF(false);
-};
-
-FUN register -> {
-    INSERT INTO users IN corteri -> [{firstname:INPUT(firstname),lastname:INPUT(lastname)}] >> RF(true);
-};
-
-FUN caller->{
-    INPUT -> [choice];
-    CMP INPUT(choice) eq register >> FUNC(check)|RF(register)>>;
-    CMP INPUT(choice) eq login >> FUNC(login)|RF(login)>>;
-};
-
-FUN register_check -> {
-    CMP FV(register) eq true >> RETURN(true,<>);
-}
-
-FUN login_check -> {
-    CMP FV(login) eq true >> RETURN(true,<>);
-}
-
-FUN starter -> {
- CREATE STORAGE corteri;
- CREATE CLASS users IN corteri -> {firstname,lastname};
- FUNC(caller);
- CMP FV(caller) eq register >> register_check >> login_check;
-};
-
-FUNC(starter);
+CREATE STORAGE Blog;
+CREATE CLASS users IN Blog -> {firstname,lastname};
+INSERT INTO users IN Blog -> [{firstname:ad,lastname:sri}];
+GET FROM users IN Blog;
+CMP a eq a >> RETURN(true,<1>) >> ; 

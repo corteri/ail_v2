@@ -1,7 +1,27 @@
-FUN create_storage ->>
-CMP 5 eq 5 >> RETURN(true,<>) >> RETURN(false,<>);
+FUN start ->>
+CREATE STORAGE Blog;
+CREATE CLASS users IN Blog -> {firstname,lastname,password,username};
+CREATE CLASS posts IN Blog -> {post,postId};
 <<-
 
-CMP 4 eq 5 >>  >> FUNC(create_storage);
-CMP 5 eq 5 >> RETURN(h,<>) >> ;
-CMP 4 eq 4 >> RETURN(e,<>) >> ;
+FUN user_register ->>
+INSERT INTO users IN Blog -> [{firstname:INPUT(firstname),lastname:INPUT(lastname),password:INPUT(password),username:INPUT(username)}] >> RFV(rg,true,<>);
+CMP a eq a >> RFV(rg,true,<>);
+<<-
+
+FUN check ->>
+GET FROM users IN Blog where username eq INPUT(username);
+CMP INPUT(username) eq ITR<0<username >> RFV(check,false,<>) >> FUNC(user_register)||RFV(check,true,<>); 
+<<-
+
+FUN login ->>
+INPUT -> [username1,password1];
+GET FROM users IN Blog where username eq INPUT(username1) AND password eq INPUT(password1);
+CMP INPUT(username1) eq ITR<2<username AND INPUT(password1) eq ITR<2<password >> RFV(login,true,<>) >> RFV(login,false,<>);
+<<-
+
+FUNC(start);
+INPUT -> [firstname,lastname,password,username];
+FUNC(check);
+FUNC(login);
+CMP AFV(login) eq true >> RETURN(true,<>) >> RETURN(false,<>);
